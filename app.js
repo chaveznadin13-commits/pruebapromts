@@ -13,6 +13,23 @@ let prompts = [];
 let filteredPrompts = [];
 let editingId = null;
 let deletingId = null;
+let currentCategoryFilter = '';
+
+const CATEGORY_ICONS = {
+  'Marketing': '📱',
+  'Ventas': '💼',
+  'RRHH': '👥',
+  'Desarrollo': '💻',
+  'Diseño': '🎨',
+  'Educación': '🎓',
+  'Finanzas': '💰',
+  'Salud': '⚕️',
+  'Legal': '⚖️',
+  'SEO': '🔎',
+  'Copywriting': '✍️',
+  'Redes Sociales': '👍',
+  'Email Marketing': '✉️'
+};
 
 // ── DOM refs ───────────────────────────────────────────────
 const $ = (sel) => document.querySelector(sel);
@@ -22,14 +39,12 @@ const DOM = {
   // Theme
   themeToggle: $('#theme-toggle'),
 
-  // Stats
-  statTotal: $('#stat-total'),
-  statCategories: $('#stat-categories'),
-  statExamples: $('#stat-examples'),
+  // Categories
+  categoryPills: $('#category-pills'),
+  promptsCountLabel: $('#prompts-count-label'),
 
   // Toolbar
   searchInput: $('#search-input'),
-  filterCategory: $('#filter-category'),
   btnGenerateSamples: $('#btn-generate-samples'),
   btnAdd: $('#btn-add-prompt'),
 
@@ -203,35 +218,53 @@ async function fetchPrompts() {
 // ── Update UI ──────────────────────────────────────────────
 
 function updateUI() {
-  updateStats();
-  updateCategoryFilter();
+  renderCategoryPills();
   applyFilters();
 }
 
-function updateStats() {
-  DOM.statTotal.textContent = prompts.length;
-  const cats = new Set(prompts.map(p => p.categoria));
-  DOM.statCategories.textContent = cats.size;
-  const withEx = prompts.filter(p => p.ejemplos && p.ejemplos.trim() !== '').length;
-  DOM.statExamples.textContent = withEx;
+function getCategoryIcon(cat) {
+  return CATEGORY_ICONS[cat] || '📁';
 }
 
-function updateCategoryFilter() {
-  const cats = [...new Set(prompts.map(p => p.categoria))].sort();
-  const current = DOM.filterCategory.value;
-  DOM.filterCategory.innerHTML = '<option value="">Todas las categorías</option>';
-  cats.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c;
-    opt.textContent = c;
-    DOM.filterCategory.appendChild(opt);
+function renderCategoryPills() {
+  // Count prompts per category
+  const counts = {};
+  prompts.forEach(p => {
+    counts[p.categoria] = (counts[p.categoria] || 0) + 1;
   });
-  DOM.filterCategory.value = current; // preserve selection
+
+  const cats = Object.keys(counts).sort();
+
+  const makePill = (id, name, icon, count) => {
+    const isActive = currentCategoryFilter === id;
+    return `
+      <button class="category-pill ${isActive ? 'active' : ''}" data-cat="${id}">
+        <span class="pill-icon">${icon}</span>
+        <span class="pill-name">${escapeHtml(name)}</span>
+        <span class="pill-count">${count}</span>
+      </button>
+    `;
+  };
+
+  let html = makePill('', 'Todos', '📚', prompts.length);
+  cats.forEach(c => {
+    html += makePill(c, c, getCategoryIcon(c), counts[c]);
+  });
+
+  DOM.categoryPills.innerHTML = html;
+
+  DOM.categoryPills.querySelectorAll('.category-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCategoryFilter = btn.getAttribute('data-cat');
+      renderCategoryPills();
+      applyFilters();
+    });
+  });
 }
 
 function applyFilters() {
   const q = DOM.searchInput.value.toLowerCase().trim();
-  const cat = DOM.filterCategory.value;
+  const cat = currentCategoryFilter;
 
   filteredPrompts = prompts.filter(p => {
     const matchCat = !cat || p.categoria === cat;
@@ -242,6 +275,7 @@ function applyFilters() {
     return matchCat && matchSearch;
   });
 
+  DOM.promptsCountLabel.textContent = `${filteredPrompts.length} prompts disponibles`;
   renderTable();
 }
 
@@ -265,6 +299,9 @@ function renderTable() {
       <td><div class="cell-truncate">${escapeHtml(p.prompt)}</div></td>
       <td><div class="cell-truncate">${escapeHtml(p.ejemplos || '—')}</div></td>
       <td class="cell-actions">
+        <button class="btn btn--lila btn--sm" title="Copiar Prompt" onclick="copyPrompt(${p.id})">
+          <img src="images/logo.png" alt="Copiar" class="btn-icon" /> Copiar Prompt
+        </button>
         <button class="btn btn--ghost btn--sm" title="Ver detalle" onclick="viewPrompt(${p.id})">👁️</button>
         <button class="btn btn--ghost btn--sm" title="Editar" onclick="editPrompt(${p.id})">✏️</button>
         <button class="btn btn--ghost btn--sm" title="Eliminar" onclick="confirmDelete(${p.id})">🗑️</button>
@@ -291,6 +328,18 @@ function viewPrompt(id) {
   DOM.detailPrompt.textContent = p.prompt;
   DOM.detailEjemplos.textContent = p.ejemplos || 'Sin ejemplos.';
   openModal(DOM.detailOverlay);
+}
+
+// ── Copy Prompt ────────────────────────────────────────────
+
+function copyPrompt(id) {
+  const p = prompts.find(x => x.id === id);
+  if (!p) return;
+  navigator.clipboard.writeText(p.prompt).then(() => {
+    showToast('Prompt copiado al portapapeles', 'success');
+  }).catch(err => {
+    showToast('Error al copiar el prompt: ' + err, 'error');
+  });
 }
 
 // ── Create / Edit ──────────────────────────────────────────
@@ -415,13 +464,12 @@ function bindEvents() {
   DOM.btnCancelDel.addEventListener('click', () => closeModal(DOM.confirmOverlay));
   DOM.confirmClose.addEventListener('click', () => closeModal(DOM.confirmOverlay));
 
-  // Search & Filter
+  // Search
   let searchTimer;
   DOM.searchInput.addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(applyFilters, 250);
   });
-  DOM.filterCategory.addEventListener('change', applyFilters);
 
   // Close modals on overlay click
   [DOM.formOverlay, DOM.detailOverlay, DOM.confirmOverlay].forEach(overlay => {
