@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Biblioteca de Prompts — Herramienta de administración para organizar, crear y gestionar prompts con conexión a Google Sheets." />
+  <title>Biblioteca de Prompts</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>" />
+</head>
+<body>
+
+  <!-- ═══ Header ═══ -->
+  <header class="app-header" id="app-header">
+    <div class="app-header__brand">
+      <div class="app-header__icon">📚</div>
+      <div>
+        <h1 class="app-header__title">Biblioteca de Prompts</h1>
+        <p class="app-header__subtitle">Gestión inteligente de prompts</p>
+      </div>
+    </div>
+    <div class="app-header__actions">
+      <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
+        <span class="theme-toggle__knob"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ Main Content ═══ -->
+  <main class="container">
+
+    <!-- Stats -->
+    <section class="stats-bar fade-in" id="stats-bar">
+      <div class="stat-card">
+        <div class="stat-card__label">Total Prompts</div>
+        <div class="stat-card__value" id="stat-total">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Categorías</div>
+        <div class="stat-card__value" id="stat-categories">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Con Ejemplos</div>
+        <div class="stat-card__value" id="stat-examples">0</div>
+      </div>
+    </section>
+
+    <!-- Toolbar -->
+    <section class="toolbar fade-in">
+      <div class="toolbar__search">
+        <span class="toolbar__search-icon">🔍</span>
+        <input
+          type="text"
+          class="toolbar__search-input"
+          id="search-input"
+          placeholder="Buscar por nombre, categoría o contenido…"
+          autocomplete="off"
+        />
+      </div>
+      <select class="toolbar__filter" id="filter-category">
+        <option value="">Todas las categorías</option>
+      </select>
+      <button class="btn btn--secondary" id="btn-generate-samples">
+        📥 Cargar Ejemplos
+      </button>
+      <button class="btn btn--primary" id="btn-add-prompt">
+        ✨ Nuevo Prompt
+      </button>
+    </section>
+
+    <!-- Table -->
+    <section class="table-card fade-in">
+      <div class="table-wrapper">
+        <table class="prompt-table" id="prompt-table">
+          <thead>
+            <tr>
+              <th>Categoría</th>
+              <th>Nombre</th>
+              <th>Prompt</th>
+              <th>Ejemplos</th>
+              <th style="width: 110px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- JS renders rows -->
+          </tbody>
+        </table>
+      </div>
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-state__icon">📝</div>
+        <div class="empty-state__title">Sin prompts aún</div>
+        <div class="empty-state__desc">Haz clic en "Nuevo Prompt" para empezar a construir tu biblioteca.</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══ Modal: Create / Edit ═══ -->
+  <div class="modal-overlay" id="modal-form-overlay">
+    <div class="modal" role="dialog" aria-labelledby="modal-form-title">
+      <div class="modal__header">
+        <h2 class="modal__title" id="modal-form-title">Nuevo Prompt</h2>
+        <button class="modal__close" id="modal-form-close" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="prompt-form" autocomplete="off">
+        <input type="hidden" id="form-id" />
+        <div class="form-group">
+          <label class="form-label" for="form-categoria">Categoría</label>
+          <input class="form-input" id="form-categoria" type="text" required placeholder="Ej: Marketing, Copywriting, SEO…" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="form-nombre">Nombre del Prompt</label>
+          <input class="form-input" id="form-nombre" type="text" required placeholder="Ej: Generador de titulares" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="form-prompt">Prompt</label>
+          <textarea class="form-textarea" id="form-prompt" required placeholder="Escribe aquí tu prompt completo…" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="form-ejemplos">Ejemplos</label>
+          <textarea class="form-textarea" id="form-ejemplos" placeholder="Agrega ejemplos de uso (opcional)" rows="3"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--secondary" id="btn-cancel-form">Cancelar</button>
+          <button type="submit" class="btn btn--primary" id="btn-submit-form">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══ Modal: Detail View ═══ -->
+  <div class="modal-overlay" id="modal-detail-overlay">
+    <div class="modal" role="dialog" aria-labelledby="modal-detail-title">
+      <div class="modal__header">
+        <h2 class="modal__title" id="modal-detail-title">Detalle del Prompt</h2>
+        <button class="modal__close" id="modal-detail-close" aria-label="Cerrar">✕</button>
+      </div>
+      <div id="modal-detail-body">
+        <div class="detail-section">
+          <div class="detail-label">Categoría</div>
+          <div class="detail-content" id="detail-categoria"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Nombre</div>
+          <div class="detail-content" id="detail-nombre"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Prompt</div>
+          <div class="detail-content" id="detail-prompt"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Ejemplos</div>
+          <div class="detail-content" id="detail-ejemplos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Modal: Confirm Delete ═══ -->
+  <div class="modal-overlay" id="modal-confirm-overlay">
+    <div class="modal" role="dialog" style="max-width: 420px;">
+      <div class="modal__header">
+        <h2 class="modal__title">⚠️ Confirmar Eliminación</h2>
+        <button class="modal__close" id="modal-confirm-close" aria-label="Cerrar">✕</button>
+      </div>
+      <p class="confirm-dialog__text" id="confirm-text">¿Estás seguro de que deseas eliminar este prompt? Esta acción no se puede deshacer.</p>
+      <div class="form-actions">
+        <button class="btn btn--secondary" id="btn-cancel-delete">Cancelar</button>
+        <button class="btn btn--danger" id="btn-confirm-delete">🗑️ Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Spinner ═══ -->
+  <div class="spinner-overlay" id="spinner">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ═══ Toast Container ═══ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="app-footer">
+    Biblioteca de Prompts &copy; 2026 — Powered by Google Sheets & Apps Script
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
