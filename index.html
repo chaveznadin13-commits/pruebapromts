@@ -13,10 +13,22 @@
   <!-- ═══ Header ═══ -->
   <header class="app-header" id="app-header">
     <div class="app-header__brand">
-      <div class="app-header__icon">📚</div>
+      <img src="images/logo.png" alt="Biblioteca de Prompts" class="app-header__logo" />
       <div>
         <h1 class="app-header__title">Biblioteca de Prompts</h1>
         <p class="app-header__subtitle">Gestión inteligente de prompts</p>
+      </div>
+    </div>
+    <div class="app-header__search">
+      <div class="toolbar__search">
+        <span class="toolbar__search-icon">🔍</span>
+        <input
+          type="text"
+          class="toolbar__search-input header-search-input"
+          id="search-input"
+          placeholder="Buscar por nombre, categoría o contenido…"
+          autocomplete="off"
+        />
       </div>
     </div>
     <div class="app-header__actions">
@@ -27,39 +39,22 @@
   </header>
 
   <!-- ═══ Main Content ═══ -->
-  <main class="container">
+  <main class="container layout-grid">
 
-    <!-- Stats -->
-    <section class="stats-bar fade-in" id="stats-bar">
-      <div class="stat-card">
-        <div class="stat-card__label">Total Prompts</div>
-        <div class="stat-card__value" id="stat-total">0</div>
+    <!-- Sidebar: Category Filters -->
+    <aside class="sidebar">
+      <section class="category-filters fade-in">
+      <div class="category-pills" id="category-pills">
+        <!-- Rendered by JS -->
       </div>
-      <div class="stat-card">
-        <div class="stat-card__label">Categorías</div>
-        <div class="stat-card__value" id="stat-categories">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card__label">Con Ejemplos</div>
-        <div class="stat-card__value" id="stat-examples">0</div>
-      </div>
-    </section>
+      <div class="prompts-count-label" id="prompts-count-label">0 prompts disponibles</div>
+      </section>
+    </aside>
 
-    <!-- Toolbar -->
-    <section class="toolbar fade-in">
-      <div class="toolbar__search">
-        <span class="toolbar__search-icon">🔍</span>
-        <input
-          type="text"
-          class="toolbar__search-input"
-          id="search-input"
-          placeholder="Buscar por nombre, categoría o contenido…"
-          autocomplete="off"
-        />
-      </div>
-      <select class="toolbar__filter" id="filter-category">
-        <option value="">Todas las categorías</option>
-      </select>
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Toolbar -->
+      <section class="toolbar fade-in">
       <button class="btn btn--secondary" id="btn-generate-samples">
         📥 Cargar Ejemplos
       </button>
@@ -78,7 +73,7 @@
               <th>Nombre</th>
               <th>Prompt</th>
               <th>Ejemplos</th>
-              <th style="width: 110px;">Acciones</th>
+              <th style="min-width: 220px;">Acciones</th>
             </tr>
           </thead>
           <tbody id="table-body">
@@ -93,6 +88,7 @@
         <div class="empty-state__desc">Haz clic en "Nuevo Prompt" para empezar a construir tu biblioteca.</div>
       </div>
     </section>
+    </div>
   </main>
 
   <!-- ═══ Modal: Create / Edit ═══ -->
